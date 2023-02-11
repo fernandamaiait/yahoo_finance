@@ -1,55 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:intl/intl.dart';
-import 'package:yahoo_finance/ui/widgets/d_chart.dart';
+import 'package:mobx/mobx.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:yahoo_finance/viewmodel/home_page_view_model.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  static final currencyFormatter =
-      NumberFormat.simpleCurrency(locale: 'pt_BR', decimalDigits: 2);
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final HomePageViewModel viewModel;
+
+  @override
+  void initState() {
+    viewModel = HomePageViewModel();
+    viewModel.getData();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    viewModel.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    const timestamps = [
-      '01/01/2021',
-      '02/01/2021',
-      '03/01/2021',
-      '04/01/2021',
-      // 1676034180,
-      // 1676034240,
-      // 1676034300,
-      // 1676034360,
-      // 1676034420,
-    ];
-    const openValues = [
-      1.00,
-      1.10,
-      1.05,
-      1.90,
-      // 25.979999542236328,
-      // 25.969999313354492,
-      // 26.079999923706055,
-      // 26.139999389648438,
-      // 26.1200008392334,
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Guide - Yahoo Finance'),
       ),
-      body: Column(
-        children: [
-          Text('D1: ${openValues[0]}'),
-          _TableHeading(
-            context,
-            'Dia',
-            'Data',
-            'Valor',
-            'Variação em relação D-1',
-            'Variação em relação à primeira data',
-          ),
-          Table(
+      body: Observer(
+        builder: (context) {
+          switch (viewModel.status) {
+            case HomePageStates.loading:
+              return CircularProgressIndicator();
+            case HomePageStates.idle:
+              return Container();
+            case HomePageStates.success:
+              return _SuccessContent(viewModel);
+            case HomePageStates.error:
+              return Container();
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _SuccessContent extends StatelessWidget {
+  const _SuccessContent(this.viewModel);
+
+  final HomePageViewModel viewModel;
+
+  static final currencyFormatter = NumberFormat.simpleCurrency(locale: 'pt_BR');
+  static final compactFormatter = NumberFormat.compact(
+    locale: 'en_US',
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _TableHeader(),
+        Observer(builder: (context) {
+          return Table(
             //    border: _buildTableBorder(context),
             // columnWidths: const <int, TableColumnWidth>{
             //   0: FlexColumnWidth(),
@@ -57,136 +75,87 @@ class HomePage extends StatelessWidget {
             // },
             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: <TableRow>[
-              for (int i = 1; i < timestamps.length; i++)
-                _TableRow(
+              for (int i = 0; i < 30; i++)
+                _buildTableRow(
                   context,
-                  (i + 1).toString(),
-                  timestamps[i].toString(),
-                  openValues[i].toString(),
-                  i == 1
-                      ? '---'
-                      : ((openValues[i] * 100) / openValues[i - 1]).toString(),
-                  i == 1
-                      ? '---'
-                      : ((openValues[i] * 100) / openValues[0]).toString(),
+                  (i + 2).toString(),
+                  viewModel.timestamps![i].toString(),
+                  currencyFormatter.format(viewModel.openValues![i]),
+                  _getDMinusOneVariation(viewModel, i),
+                  _getDayOneVariation(viewModel, i),
                 ),
             ],
-          ),
-        ],
-      ),
+          );
+        }),
+      ],
     );
   }
 
-  // TableRow _buildTableRow(
-  //   BuildContext context,
-  //   columnOneText,
-  //   columnTwoMarkdown, {
-  //   TableCellVerticalAlignment columnOneVerticalAlignment = TableCellVerticalAlignment.top,
-  //   TableCellVerticalAlignment columnTwoVerticalAlignment = TableCellVerticalAlignment.top,
-  // }) {
-  //   return TableRow(
-  //     children: <Widget>[
-  //       TableCell(
-  //         verticalAlignment: columnOneVerticalAlignment,
-  //         child: Padding(
-  //           padding: EdgeInsets.symmetric(
-  //             horizontal: context.dimens.horizontalMargin,
-  //             vertical: context.dimens.verticalMargin,
-  //           ),
-  //           child: Text(
-  //             columnOneText,
-  //             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-  //                   fontWeight: FontWeight.bold,
-  //                 ),
-  //           ),
-  //         ),
-  //       ),
-  //       TableCell(
-  //         verticalAlignment: columnTwoVerticalAlignment,
-  //         child: Padding(
-  //           padding: EdgeInsets.symmetric(
-  //             horizontal: context.dimens.horizontalMargin,
-  //             vertical: context.dimens.verticalMargin,
-  //           ),
-  //           child: MarkdownBody(
-  //             data: columnTwoMarkdown,
-  //             fitContent: false,
-  //             styleSheet: MarkdownStyleSheet(
-  //               p: Theme.of(context).textTheme.bodySmall,
-  //               a: Theme.of(context).textTheme.bodySmall!.copyWith(
-  //                     color: const Color(0xFF00A1A5), // This is the WebBank requested/required link color for this link
-  //                   ),
-  //               textAlign: WrapAlignment.end,
-  //             ),
-  //             onTapLink: (text, href, title) {
-  //               AppRouter.of(context).navigateToLink(Uri.parse(href!));
-  //             },
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
+  String _getDMinusOneVariation(HomePageViewModel viewModel, int i) {
+    return i == 0
+        ? '---'
+        : compactFormatter.format(
+            _getVariation(
+              viewModel.openValues![i - 1],
+              viewModel.openValues![i],
+            ),
+          );
+  }
 
-  // TableBorder _buildTableBorder(BuildContext context) {
-  //   return TableBorder(
-  //     top: _buildTableBorderSide(context),
-  //     left: _buildTableBorderSide(context),
-  //     right: _buildTableBorderSide(context),
-  //     bottom: _buildTableBorderSide(context),
-  //     horizontalInside: _buildTableBorderSide(context),
-  //     verticalInside: _buildTableBorderSide(context),
-  //   );
-  // }
+  String _getDayOneVariation(HomePageViewModel viewModel, int i) {
+    return i == 0
+        ? '---'
+        : '${compactFormatter.format(
+            _getVariation(
+              viewModel.openValues![0],
+              viewModel.openValues![i],
+            ),
+          )} %';
+  }
 
-  // BorderSide _buildTableBorderSide(BuildContext context) {
-  //   return BorderSide(
-  //     color: context.colors.outline,
-  //     width: 1,
-  //   );
-  // }
+  double _getVariation(double priorValue, double currentValue) {
+    return (currentValue - priorValue) * 100 / priorValue;
+  }
 }
 
-Widget _TableHeading(
-  BuildContext context,
-  String columOneText,
-  columTwoText,
-  columThreeText,
-  columFourText,
-  columFiveText,
-) {
-  return Table(
-    // border: TableBorder(
-    //     // top: _buildTableBorderSide(context),
-    //     // left: _buildTableBorderSide(context),
-    //     // right: _buildTableBorderSide(context),
-    //     ),
-    // columnWidths: const <int, TableColumnWidth>{
-    //   0: FlexColumnWidth(),
-    //   1: FlexColumnWidth(2),
-    // },
-    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-    children: [
-      TableRow(
-        children: [
-          Text(columOneText),
-          Text(columTwoText),
-          Text(columThreeText),
-          Text(columFourText),
-          Text(columFiveText),
-        ],
-      ),
-    ],
-  );
+class _TableHeader extends StatelessWidget {
+  const _TableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Table(
+      // border: TableBorder(
+      //     // top: _buildTableBorderSide(context),
+      //     // left: _buildTableBorderSide(context),
+      //     // right: _buildTableBorderSide(context),
+      //     ),
+      // columnWidths: const <int, TableColumnWidth>{
+      //   0: FlexColumnWidth(),
+      //   1: FlexColumnWidth(2),
+      // },
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: const [
+        TableRow(
+          children: [
+            Text('Dia'),
+            Text('Data'),
+            Text('Valor'),
+            Text('Variação em relação D-1'),
+            Text('Variação em relação à primeira data'),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-TableRow _TableRow(
+TableRow _buildTableRow(
   BuildContext context,
   columnOneText,
   columnTwoText,
-  columThreeText,
+  columnThreeText,
   columnFourText,
-  columFiveText,
+  columnFiveText,
 
 //   {
 //   TableCellVerticalAlignment columnOneVerticalAlignment =
@@ -209,13 +178,13 @@ TableRow _TableRow(
         child: Text(columnTwoText),
       ),
       TableCell(
-        child: Text(columThreeText),
+        child: Text(columnThreeText),
       ),
       TableCell(
-        child: Text(columThreeText),
+        child: Text(columnFourText),
       ),
       TableCell(
-        child: Text(columFiveText),
+        child: Text(columnFiveText),
       ),
     ],
   );
