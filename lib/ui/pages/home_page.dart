@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:mobx/mobx.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:yahoo_finance/viewmodel/home_page_view_model.dart';
 
@@ -32,18 +31,24 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Guide - Yahoo Finance'),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.show_chart),
+          ),
+        ],
       ),
       body: Observer(
         builder: (context) {
           switch (viewModel.status) {
             case HomePageStates.loading:
-              return CircularProgressIndicator();
+              return const Center(child: CircularProgressIndicator());
             case HomePageStates.idle:
-              return Container();
+              return const Center(child: Text('Idle'));
             case HomePageStates.success:
               return _SuccessContent(viewModel);
             case HomePageStates.error:
-              return Container();
+              return const Center(child: const Text('Error'));
           }
         },
       ),
@@ -63,31 +68,36 @@ class _SuccessContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const _TableHeader(),
-        Observer(builder: (context) {
-          return Table(
-            //    border: _buildTableBorder(context),
-            // columnWidths: const <int, TableColumnWidth>{
-            //   0: FlexColumnWidth(),
-            //   1: FlexColumnWidth(2),
-            // },
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            children: <TableRow>[
-              for (int i = 0; i < 30; i++)
-                _buildTableRow(
-                  context,
-                  (i + 2).toString(),
-                  viewModel.timestamps![i].toString(),
-                  currencyFormatter.format(viewModel.openValues![i]),
-                  _getDMinusOneVariation(viewModel, i),
-                  _getDayOneVariation(viewModel, i),
-                ),
-            ],
-          );
-        }),
-      ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const _TableHeader(),
+            Observer(builder: (context) {
+              return Table(
+                //    border: _buildTableBorder(context),
+                // columnWidths: const <int, TableColumnWidth>{
+                //   0: FlexColumnWidth(),
+                //   1: FlexColumnWidth(2),
+                // },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: <TableRow>[
+                  for (int i = 0; i < 29; i++)
+                    _buildTableRow(
+                      context,
+                      (i + 2).toString(),
+                      viewModel.timestamps![i].toString(),
+                      currencyFormatter.format(viewModel.openValues![i]),
+                      _getDMinusOneVariation(viewModel, i),
+                      _getDayOneVariation(viewModel, i),
+                    ),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 
@@ -137,11 +147,11 @@ class _TableHeader extends StatelessWidget {
       children: const [
         TableRow(
           children: [
-            Text('Dia'),
+            Text('Dia', textAlign: TextAlign.left),
             Text('Data'),
             Text('Valor'),
-            Text('Variação em relação D-1'),
-            Text('Variação em relação à primeira data'),
+            Text('D-1'),
+            Text('D1'),
           ],
         ),
       ],
@@ -169,22 +179,26 @@ TableRow _buildTableRow(
       TableCell(
         child: Text(
           columnOneText,
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          textAlign: TextAlign.center,
         ),
       ),
       TableCell(
-        child: Text(columnTwoText),
+        child: Text(
+          columnTwoText,
+          textAlign: TextAlign.center,
+        ),
       ),
       TableCell(
-        child: Text(columnThreeText),
+        child: Text(columnThreeText, textAlign: TextAlign.right),
       ),
       TableCell(
-        child: Text(columnFourText),
+        child: Text(columnFourText, textAlign: TextAlign.right),
       ),
       TableCell(
-        child: Text(columnFiveText),
+        child: Text(
+          columnFiveText,
+          textAlign: TextAlign.right,
+        ),
       ),
     ],
   );
