@@ -9,39 +9,21 @@ part of 'home_page_view_model.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$HomePageViewModel on _HomePageViewModel, Store {
-  late final _$_openValuesAtom =
-      Atom(name: '_HomePageViewModel._openValues', context: context);
+  late final _$_indicatorsAtom =
+      Atom(name: '_HomePageViewModel._indicators', context: context);
 
-  List<dynamic>? get openValues {
-    _$_openValuesAtom.reportRead();
-    return super._openValues;
+  List<Indicator>? get indicators {
+    _$_indicatorsAtom.reportRead();
+    return super._indicators;
   }
 
   @override
-  List<dynamic>? get _openValues => openValues;
+  List<Indicator>? get _indicators => indicators;
 
   @override
-  set _openValues(List<dynamic>? value) {
-    _$_openValuesAtom.reportWrite(value, super._openValues, () {
-      super._openValues = value;
-    });
-  }
-
-  late final _$_timestampsAtom =
-      Atom(name: '_HomePageViewModel._timestamps', context: context);
-
-  List<dynamic>? get timestamps {
-    _$_timestampsAtom.reportRead();
-    return super._timestamps;
-  }
-
-  @override
-  List<dynamic>? get _timestamps => timestamps;
-
-  @override
-  set _timestamps(List<dynamic>? value) {
-    _$_timestampsAtom.reportWrite(value, super._timestamps, () {
-      super._timestamps = value;
+  set _indicators(List<Indicator>? value) {
+    _$_indicatorsAtom.reportWrite(value, super._indicators, () {
+      super._indicators = value;
     });
   }
 

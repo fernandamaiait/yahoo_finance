@@ -48,11 +48,43 @@ class _HomePageState extends State<HomePage> {
             case HomePageStates.success:
               return _SuccessContent(viewModel);
             case HomePageStates.error:
-              return const Center(child: const Text('Error'));
+              return _ErrorContent(
+                onRetryPressed: _OnRetryPressed,
+              );
           }
         },
       ),
     );
+  }
+
+  void _OnRetryPressed() async {
+    await viewModel.getData();
+  }
+}
+
+class _ErrorContent extends StatelessWidget {
+  const _ErrorContent({required this.onRetryPressed});
+
+  final VoidCallback onRetryPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: Column(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.error,
+          color: Colors.red,
+        ),
+        const Text('Não foi possível consultar o ativo'),
+        ElevatedButton(
+          onPressed: onRetryPressed,
+          child: const Text('Tentar novamente'),
+        ),
+      ],
+    ));
   }
 }
 
@@ -76,22 +108,22 @@ class _SuccessContent extends StatelessWidget {
             const _TableHeader(),
             Observer(builder: (context) {
               return Table(
-                //    border: _buildTableBorder(context),
-                // columnWidths: const <int, TableColumnWidth>{
-                //   0: FlexColumnWidth(),
-                //   1: FlexColumnWidth(2),
-                // },
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                border: TableBorder.all(
+                  color: Colors.black12,
+                  width: 1,
+                ),
+                columnWidths: _getColumWidths,
                 children: <TableRow>[
-                  for (int i = 0; i < 29; i++)
+                  for (var indicator in viewModel.indicators!)
                     _buildTableRow(
                       context,
-                      (i + 2).toString(),
-                      viewModel.timestamps![i].toString(),
-                      currencyFormatter.format(viewModel.openValues![i]),
-                      _getDMinusOneVariation(viewModel, i),
-                      _getDayOneVariation(viewModel, i),
+                      indicator.day.toString(),
+                      DateFormat('dd/MM/yyyy').format(indicator.timestamp),
+                      currencyFormatter.format(indicator.openValue),
+                      _formatVariation(indicator.dMinusOneVariation),
+                      _formatVariation(indicator.dOneVariation),
                     ),
+                  // for (viewModel.in)
                 ],
               );
             }),
@@ -101,30 +133,10 @@ class _SuccessContent extends StatelessWidget {
     );
   }
 
-  String _getDMinusOneVariation(HomePageViewModel viewModel, int i) {
-    return i == 0
+  String _formatVariation(double? variation) {
+    return variation == null
         ? '---'
-        : compactFormatter.format(
-            _getVariation(
-              viewModel.openValues![i - 1],
-              viewModel.openValues![i],
-            ),
-          );
-  }
-
-  String _getDayOneVariation(HomePageViewModel viewModel, int i) {
-    return i == 0
-        ? '---'
-        : '${compactFormatter.format(
-            _getVariation(
-              viewModel.openValues![0],
-              viewModel.openValues![i],
-            ),
-          )} %';
-  }
-
-  double _getVariation(double priorValue, double currentValue) {
-    return (currentValue - priorValue) * 100 / priorValue;
+        : '${compactFormatter.format(variation)} %';
   }
 }
 
@@ -133,27 +145,42 @@ class _TableHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TextStyle textStyle = TextStyle(
+      color: Theme.of(context).colorScheme.onPrimary,
+      fontWeight: FontWeight.bold,
+    );
+
     return Table(
-      // border: TableBorder(
-      //     // top: _buildTableBorderSide(context),
-      //     // left: _buildTableBorderSide(context),
-      //     // right: _buildTableBorderSide(context),
-      //     ),
-      // columnWidths: const <int, TableColumnWidth>{
-      //   0: FlexColumnWidth(),
-      //   1: FlexColumnWidth(2),
-      // },
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: const [
+      border: TableBorder(
+        top: _buildTableBorderSide(context),
+        left: _buildTableBorderSide(context),
+        right: _buildTableBorderSide(context),
+        verticalInside: _buildTableBorderSide(context),
+      ),
+      columnWidths: _getColumWidths,
+      children: <TableRow>[
         TableRow(
+          decoration: BoxDecoration(color: Theme.of(context).primaryColor),
           children: [
-            Text('Dia', textAlign: TextAlign.left),
-            Text('Data'),
-            Text('Valor'),
-            Text('D-1'),
-            Text('D1'),
+            _TableCell(
+                text: 'Dia', textAlign: TextAlign.center, textStyle: textStyle),
+            _TableCell(
+                text: 'Data',
+                textAlign: TextAlign.center,
+                textStyle: textStyle),
+            _TableCell(
+                text: 'Valor',
+                textAlign: TextAlign.center,
+                textStyle: textStyle),
+            _TableCell(
+                text: 'D-1', textAlign: TextAlign.center, textStyle: textStyle),
+            _TableCell(
+              text: 'D1',
+              textAlign: TextAlign.center,
+              textStyle: textStyle,
+            )
           ],
-        ),
+        )
       ],
     );
   }
@@ -161,45 +188,72 @@ class _TableHeader extends StatelessWidget {
 
 TableRow _buildTableRow(
   BuildContext context,
-  columnOneText,
-  columnTwoText,
-  columnThreeText,
-  columnFourText,
-  columnFiveText,
-
-//   {
-//   TableCellVerticalAlignment columnOneVerticalAlignment =
-//       TableCellVerticalAlignment.top,
-//   TableCellVerticalAlignment columnTwoVerticalAlignment =
-//       TableCellVerticalAlignment.top,
-// }
+  dayText,
+  timestampText,
+  openValueText,
+  dMinusOneVariationText,
+  dOneVariationText,
 ) {
   return TableRow(
+    decoration: BoxDecoration(
+        color: (int.parse(dayText) % 2 == 1)
+            ? Theme.of(context).primaryColorLight
+            : null),
     children: <Widget>[
-      TableCell(
-        child: Text(
-          columnOneText,
-          textAlign: TextAlign.center,
-        ),
+      _TableCell(
+        text: dayText,
+        textAlign: TextAlign.center,
       ),
-      TableCell(
-        child: Text(
-          columnTwoText,
-          textAlign: TextAlign.center,
-        ),
+      _TableCell(
+        text: timestampText,
+        textAlign: TextAlign.center,
       ),
-      TableCell(
-        child: Text(columnThreeText, textAlign: TextAlign.right),
-      ),
-      TableCell(
-        child: Text(columnFourText, textAlign: TextAlign.right),
-      ),
-      TableCell(
-        child: Text(
-          columnFiveText,
-          textAlign: TextAlign.right,
-        ),
-      ),
+      _TableCell(text: openValueText),
+      _TableCell(text: dMinusOneVariationText),
+      _TableCell(text: dOneVariationText),
     ],
   );
+}
+
+class _TableCell extends StatelessWidget {
+  const _TableCell({
+    required this.text,
+    this.textAlign = TextAlign.right,
+    this.textStyle,
+  });
+
+  final String text;
+  final TextAlign textAlign;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          text,
+          textAlign: textAlign,
+          style: textStyle,
+        ),
+      ),
+    );
+  }
+}
+
+BorderSide _buildTableBorderSide(BuildContext context) {
+  return const BorderSide(
+    color: Colors.black12,
+    width: 1,
+  );
+}
+
+get _getColumWidths {
+  return const <int, TableColumnWidth>{
+    0: FlexColumnWidth(1),
+    1: FlexColumnWidth(3),
+    2: FlexColumnWidth(2),
+    3: FlexColumnWidth(2),
+    4: FlexColumnWidth(2),
+  };
 }
