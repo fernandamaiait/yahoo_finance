@@ -1,16 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mobx/mobx.dart';
+import 'package:yahoo_finance/ui/consts.dart';
 
 part 'home_page_view_model.g.dart';
 
 class HomePageViewModel = _HomePageViewModel with _$HomePageViewModel;
 
 abstract class _HomePageViewModel with Store {
-  static const yahooFinanceUrl =
-      'https://query2.finance.yahoo.com/v8/finance/chart/PETR4.SA';
-
   static final dio = Dio();
+
+  @readonly
+  String? _currency;
 
   @readonly
   List<Indicator>? _indicators;
@@ -21,18 +22,29 @@ abstract class _HomePageViewModel with Store {
   void dispose() {}
 
   @action
-  Future<void> getData() async {
+  Future<void> getData(String searchString) async {
     _status = HomePageStates.loading;
+
+    final period1 = ((DateTime.now()
+                .subtract(const Duration(days: 30))
+                .toUtc()
+                .millisecondsSinceEpoch) /
+            1000)
+        .round();
+
     if (_indicators != null) {
       _indicators!.clear();
     }
     try {
-      final response = await dio.get(yahooFinanceUrl);
+      final url =
+          '$YAHOO_FINANCE_URL${searchString.toUpperCase()}?period1=$period1&period2=9999999999&interval=1d';
+      final response = await dio.get(url);
       final result = response.data['chart']['result'][0];
+      _currency = result['meta']['currency'];
       final timestamps = result['timestamp'];
       final openValues = result['indicators']['quote'][0]['open'];
       List<Indicator> localIndicator = [];
-      for (int i = 0; i < 30; i++) {
+      for (int i = 0; (i < 30 && i < timestamps.length); i++) {
         localIndicator.add(
           Indicator(
             day: i + 2,

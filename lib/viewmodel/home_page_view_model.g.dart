@@ -9,6 +9,24 @@ part of 'home_page_view_model.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$HomePageViewModel on _HomePageViewModel, Store {
+  late final _$_currencyAtom =
+      Atom(name: '_HomePageViewModel._currency', context: context);
+
+  String? get currency {
+    _$_currencyAtom.reportRead();
+    return super._currency;
+  }
+
+  @override
+  String? get _currency => currency;
+
+  @override
+  set _currency(String? value) {
+    _$_currencyAtom.reportWrite(value, super._currency, () {
+      super._currency = value;
+    });
+  }
+
   late final _$_indicatorsAtom =
       Atom(name: '_HomePageViewModel._indicators', context: context);
 
@@ -49,8 +67,8 @@ mixin _$HomePageViewModel on _HomePageViewModel, Store {
       AsyncAction('_HomePageViewModel.getData', context: context);
 
   @override
-  Future<void> getData() {
-    return _$getDataAsyncAction.run(() => super.getData());
+  Future<void> getData(String searchString) {
+    return _$getDataAsyncAction.run(() => super.getData(searchString));
   }
 
   @override
