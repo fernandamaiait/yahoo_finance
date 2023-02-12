@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mobx/mobx.dart';
 import 'package:yahoo_finance/ui/consts.dart';
+import 'package:d_chart/d_chart.dart';
 
 part 'home_page_view_model.g.dart';
 
@@ -14,7 +15,13 @@ abstract class _HomePageViewModel with Store {
   String? _currency;
 
   @readonly
-  List<Indicator>? _indicators;
+  List<Indicator>? _indicators = [];
+
+  @readonly
+  List<DChartTimeData>? _chartData = [];
+
+  @readonly
+  String _searchString = '';
 
   @readonly
   HomePageStates _status = HomePageStates.idle;
@@ -24,6 +31,7 @@ abstract class _HomePageViewModel with Store {
   @action
   Future<void> getData(String searchString) async {
     _status = HomePageStates.loading;
+    _searchString = searchString.toUpperCase();
 
     final period1 = ((DateTime.now()
                 .subtract(const Duration(days: 30))
@@ -32,20 +40,25 @@ abstract class _HomePageViewModel with Store {
             1000)
         .round();
 
-    if (_indicators != null) {
-      _indicators!.clear();
-    }
+    _indicators!.clear();
+    _chartData!.clear();
+
     try {
       final url =
-          '$YAHOO_FINANCE_URL${searchString.toUpperCase()}?period1=$period1&period2=9999999999&interval=1d';
+          '$YAHOO_FINANCE_URL$_searchString?period1=$period1&period2=9999999999&interval=1d';
       final response = await dio.get(url);
       final result = response.data['chart']['result'][0];
       _currency = result['meta']['currency'];
       final timestamps = result['timestamp'];
       final openValues = result['indicators']['quote'][0]['open'];
-      List<Indicator> localIndicator = [];
+
       for (int i = 0; (i < 30 && i < timestamps.length); i++) {
-        localIndicator.add(
+        _chartData!.add(
+          DChartTimeData(
+              time: DateTime.fromMillisecondsSinceEpoch(timestamps![i] * 1000),
+              value: openValues![i]),
+        );
+        _indicators!.add(
           Indicator(
             day: i + 2,
             timestamp:
@@ -66,8 +79,6 @@ abstract class _HomePageViewModel with Store {
           ),
         );
       }
-
-      _indicators = localIndicator;
 
       _status = HomePageStates.success;
     } catch (e) {

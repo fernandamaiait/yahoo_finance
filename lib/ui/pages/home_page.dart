@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:yahoo_finance/ui/widgets/d_chart.dart';
 import 'package:yahoo_finance/viewmodel/home_page_view_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -132,11 +133,19 @@ class _SuccessContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const _TableHeader(),
-        Observer(builder: (context) {
-          return Table(
+    return Observer(builder: (context) {
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 300,
+            child: DChart(
+              //searchString: viewModel.searchString,
+              data: viewModel.chartData!,
+            ),
+          ),
+          const _TableHeader(),
+          Table(
             border: TableBorder.all(
               color: Colors.black12,
               width: 1,
@@ -155,18 +164,10 @@ class _SuccessContent extends StatelessWidget {
                   _formatVariation(indicator.dOneVariation),
                 ),
             ],
-          );
-        }),
-      ],
-    );
-  }
-
-  String _formatOpenValue(double? value) {
-    //return viewModel.currency == "BRL"
-    //  ?
-
-    return brazilianCurrencyFormatter.format(double);
-    //  : foreignCurrencyFormatter.format(double);
+          ),
+        ],
+      );
+    });
   }
 
   String _formatVariation(double? variation) {

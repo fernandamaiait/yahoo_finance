@@ -45,6 +45,42 @@ mixin _$HomePageViewModel on _HomePageViewModel, Store {
     });
   }
 
+  late final _$_chartDataAtom =
+      Atom(name: '_HomePageViewModel._chartData', context: context);
+
+  List<DChartTimeData>? get chartData {
+    _$_chartDataAtom.reportRead();
+    return super._chartData;
+  }
+
+  @override
+  List<DChartTimeData>? get _chartData => chartData;
+
+  @override
+  set _chartData(List<DChartTimeData>? value) {
+    _$_chartDataAtom.reportWrite(value, super._chartData, () {
+      super._chartData = value;
+    });
+  }
+
+  late final _$_searchStringAtom =
+      Atom(name: '_HomePageViewModel._searchString', context: context);
+
+  String get searchString {
+    _$_searchStringAtom.reportRead();
+    return super._searchString;
+  }
+
+  @override
+  String get _searchString => searchString;
+
+  @override
+  set _searchString(String value) {
+    _$_searchStringAtom.reportWrite(value, super._searchString, () {
+      super._searchString = value;
+    });
+  }
+
   late final _$_statusAtom =
       Atom(name: '_HomePageViewModel._status', context: context);
 
