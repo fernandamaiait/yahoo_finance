@@ -1,16 +1,15 @@
-# yahoo_finance
+O aplicativo pode ser testado de duas formas:
 
-A new Flutter project.
+Primeira forma: Baixar e instalar o apk disponibilizado no link abaixo em um dispositivo Android:
+https://drive.google.com/file/d/1Mn4WOowz5yBEdWW4TpuCEN_OZ-l_1HlO/view?usp=sharing
 
-## Getting Started
+Segunda format: Executar em um computador - para executar o aplicativo em um computador, este precisará ter toda a estrutura para executar um projeto Flutter (Android Studio, Flutter SDK, etc.).
+Os seguintes passos devem ser seguidos
+- Clonar o repositório localmente;
+- Um emulador Android deve estar aberto no computador, ou um dispositivo Android deve estar conectado ao computador
+- Na pasta onde o repositório foi clonado, executar a seguinte linha de comando:
+> flutter run
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Observações:
+- É possível que o aplicativo possa ser executado em emulador/dispositivo iOS, mas essa opção não foi testada
+- O aplicativo pode ser executado para web, no entanto o CORS não foi tratado, por isso há falha ao buscar os dados do Yahoo Finance
