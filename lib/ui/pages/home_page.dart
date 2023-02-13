@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -14,7 +16,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final HomePageViewModel viewModel;
   late final TextEditingController searchController;
-  //ResultOptions selectedResultOption = ResultOptions.table;
   final Set<VisualizationOption> visualizationOption = <VisualizationOption>{
     VisualizationOption.table,
     VisualizationOption.chart
@@ -44,72 +45,89 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Observer(builder: (context) {
-            return Column(
-              children: [
-                TextFormField(
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    suffixIcon: IconButton(
-                      onPressed: () => _onSearchPressed(),
-                      icon: const Icon(Icons.search),
+          child: Column(
+            children: [
+              TextFormField(
+                autofocus: true,
+                controller: searchController,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                decoration: InputDecoration(
+                  labelText: 'Insira o nome do ativo a ser consultado',
+                  suffixIcon: IconButton(
+                    onPressed: searchController.text.isEmpty
+                        ? null
+                        : () => _onSearchPressed(),
+                    icon: const Icon(Icons.search),
+                  ),
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(
+                      width: 1,
+                      color: Colors.black26,
                     ),
-                    border: const OutlineInputBorder(
-                      borderSide: BorderSide(
-                        width: 1,
-                        color: Colors.black26,
-                      ),
-                    ),
-                    labelText: 'Insira o nome do ativo a ser consultado',
                   ),
                 ),
-                const SizedBox(height: 16),
-                Observer(
-                  builder: (context) {
-                    switch (viewModel.status) {
-                      case HomePageStates.loading:
-                        return const Center(child: CircularProgressIndicator());
-                      case HomePageStates.idle:
-                        return const SizedBox.shrink();
-                      case HomePageStates.success:
-                        return Column(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () => setState(
-                                () => selectedVisualizationOption =
-                                    selectedVisualizationOption ==
-                                            VisualizationOption.table
-                                        ? VisualizationOption.chart
-                                        : VisualizationOption.table,
+                onChanged: (_) => setState(() {}),
+                onFieldSubmitted: searchController.text.isEmpty
+                    ? null
+                    : (_) => _onSearchPressed(),
+              ),
+              const SizedBox(height: 16),
+              Observer(
+                builder: (context) {
+                  switch (viewModel.status) {
+                    case HomePageStates.loading:
+                      return const Center(child: CircularProgressIndicator());
+                    case HomePageStates.idle:
+                      return const SizedBox.shrink();
+                    case HomePageStates.success:
+                      return Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                viewModel.searchString,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
                               ),
-                              child: Text(selectedVisualizationOption ==
-                                      VisualizationOption.table
-                                  ? 'Ver gráfico'
-                                  : 'Ver tabela'),
-                            ),
-                            const SizedBox(height: 16),
-                            _SuccessContent(
-                              viewModel: viewModel,
-                              visualizationOption: selectedVisualizationOption,
-                            ),
-                          ],
-                        );
-                      case HomePageStates.error:
-                        return _ErrorContent(
-                          onRetryPressed: () => _onSearchPressed(),
-                        );
-                    }
-                  },
-                ),
-              ],
-            );
-          }),
+                              ElevatedButton(
+                                onPressed: () => setState(
+                                  () => selectedVisualizationOption =
+                                      selectedVisualizationOption ==
+                                              VisualizationOption.table
+                                          ? VisualizationOption.chart
+                                          : VisualizationOption.table,
+                                ),
+                                child: Text(selectedVisualizationOption ==
+                                        VisualizationOption.table
+                                    ? 'Ver gráfico'
+                                    : 'Ver tabela'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _SuccessContent(
+                            viewModel: viewModel,
+                            visualizationOption: selectedVisualizationOption,
+                          ),
+                        ],
+                      );
+                    case HomePageStates.error:
+                      return _ErrorContent(
+                        onRetryPressed: () => _onSearchPressed(),
+                      );
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _onSearchPressed() async {
+    FocusScope.of(context).unfocus();
     await viewModel.getData(searchController.text);
   }
 }
@@ -151,49 +169,52 @@ class _SuccessContent extends StatelessWidget {
 
   static final brazilianCurrencyFormatter =
       NumberFormat.simpleCurrency(locale: 'pt_BR');
-  static final foreignCurrencyFormatter = NumberFormat.decimalPattern('pt_BR');
+
   static final compactFormatter = NumberFormat.compact(
     locale: 'en_US',
   );
 
   @override
   Widget build(BuildContext context) {
-    return Observer(builder: (context) {
-      return visualizationOption == VisualizationOption.chart
-          ? SizedBox(
-              width: double.infinity,
-              height: 300,
-              child: DChart(
-                data: viewModel.chartData,
-              ),
-            )
-          : Column(
-              children: [
-                const _TableHeader(),
-                Table(
-                  border: TableBorder.all(
-                    color: Colors.black12,
-                    width: 1,
-                  ),
-                  columnWidths: _getColumWidths,
-                  children: <TableRow>[
-                    for (var indicator in viewModel.indicators)
-                      _buildTableRow(
-                        context,
-                        indicator.day.toString(),
-                        DateFormat('dd/MM/yyyy').format(indicator.timestamp),
-                        viewModel.currency == "BRL"
-                            ? brazilianCurrencyFormatter
-                                .format(indicator.openValue)
-                            : '${foreignCurrencyFormatter.format(indicator.openValue)} ${viewModel.currency}',
-                        _formatVariation(indicator.dMinusOneVariation),
-                        _formatVariation(indicator.dOneVariation),
-                      ),
-                  ],
+    return visualizationOption == VisualizationOption.chart
+        ? SizedBox(
+            width: double.infinity,
+            height: 300,
+            child: DChart(
+              data: viewModel.chartData,
+            ),
+          )
+        : Column(
+            children: [
+              const _TableHeader(),
+              Table(
+                border: TableBorder.all(
+                  color: Colors.black12,
+                  width: 1,
                 ),
-              ],
-            );
-    });
+                columnWidths: _getColumWidths,
+                children: <TableRow>[
+                  for (var indicator in viewModel.indicators)
+                    _buildTableRow(
+                      context,
+                      indicator.day.toString(),
+                      DateFormat('dd/MM/yyyy').format(indicator.timestamp),
+                      viewModel.currency == "BRL"
+                          ? brazilianCurrencyFormatter
+                              .format(indicator.openValue)
+                          : '${(indicator.openValue).toStringAsFixed(2)} ${viewModel.currency}',
+                      _formatVariation(indicator.dMinusOneVariation),
+                      _formatVariation(indicator.dOneVariation),
+                    ),
+                ],
+              ),
+            ],
+          );
+  }
+
+  double dp(double val, int places) {
+    num mod = pow(10.0, places);
+    return ((val * mod).round().toDouble() / mod);
   }
 
   String _formatVariation(double? variation) {

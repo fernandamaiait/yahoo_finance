@@ -6,7 +6,7 @@ import 'package:d_chart/d_chart.dart';
 
 part 'home_page_view_model.g.dart';
 
-class HomePageViewModel = _HomePageViewModel with _$HomePageViewModel;
+class HomePageViewModel extends _HomePageViewModel with _$HomePageViewModel {}
 
 abstract class _HomePageViewModel with Store {
   static final dio = Dio();
