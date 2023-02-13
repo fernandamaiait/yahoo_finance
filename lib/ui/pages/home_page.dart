@@ -84,8 +84,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                               child: Text(selectedVisualizationOption ==
                                       VisualizationOption.table
-                                  ? 'View chart'
-                                  : 'View table'),
+                                  ? 'Ver gráfico'
+                                  : 'Ver tabela'),
                             ),
                             const SizedBox(height: 16),
                             _SuccessContent(
