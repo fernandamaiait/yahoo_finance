@@ -30,16 +30,16 @@ mixin _$HomePageViewModel on _HomePageViewModel, Store {
   late final _$_indicatorsAtom =
       Atom(name: '_HomePageViewModel._indicators', context: context);
 
-  List<Indicator>? get indicators {
+  List<Indicator> get indicators {
     _$_indicatorsAtom.reportRead();
     return super._indicators;
   }
 
   @override
-  List<Indicator>? get _indicators => indicators;
+  List<Indicator> get _indicators => indicators;
 
   @override
-  set _indicators(List<Indicator>? value) {
+  set _indicators(List<Indicator> value) {
     _$_indicatorsAtom.reportWrite(value, super._indicators, () {
       super._indicators = value;
     });
@@ -48,16 +48,16 @@ mixin _$HomePageViewModel on _HomePageViewModel, Store {
   late final _$_chartDataAtom =
       Atom(name: '_HomePageViewModel._chartData', context: context);
 
-  List<DChartTimeData>? get chartData {
+  List<DChartTimeData> get chartData {
     _$_chartDataAtom.reportRead();
     return super._chartData;
   }
 
   @override
-  List<DChartTimeData>? get _chartData => chartData;
+  List<DChartTimeData> get _chartData => chartData;
 
   @override
-  set _chartData(List<DChartTimeData>? value) {
+  set _chartData(List<DChartTimeData> value) {
     _$_chartDataAtom.reportWrite(value, super._chartData, () {
       super._chartData = value;
     });

@@ -15,10 +15,10 @@ abstract class _HomePageViewModel with Store {
   String? _currency;
 
   @readonly
-  List<Indicator>? _indicators = [];
+  List<Indicator> _indicators = [];
 
   @readonly
-  List<DChartTimeData>? _chartData = [];
+  List<DChartTimeData> _chartData = [];
 
   @readonly
   String _searchString = '';
@@ -32,6 +32,8 @@ abstract class _HomePageViewModel with Store {
   Future<void> getData(String searchString) async {
     _status = HomePageStates.loading;
     _searchString = searchString.toUpperCase();
+    _indicators = [];
+    _chartData = [];
 
     final period1 = ((DateTime.now()
                 .subtract(const Duration(days: 30))
@@ -40,12 +42,9 @@ abstract class _HomePageViewModel with Store {
             1000)
         .round();
 
-    _indicators!.clear();
-    _chartData!.clear();
-
     try {
       final url =
-          '$YAHOO_FINANCE_URL$_searchString?period1=$period1&period2=9999999999&interval=1d';
+          '$yahooFinanceUrl$_searchString?period1=$period1&period2=9999999999&interval=1d';
       final response = await dio.get(url);
       final result = response.data['chart']['result'][0];
       _currency = result['meta']['currency'];
@@ -53,12 +52,12 @@ abstract class _HomePageViewModel with Store {
       final openValues = result['indicators']['quote'][0]['open'];
 
       for (int i = 0; (i < 30 && i < timestamps.length); i++) {
-        _chartData!.add(
+        _chartData.add(
           DChartTimeData(
               time: DateTime.fromMillisecondsSinceEpoch(timestamps![i] * 1000),
               value: openValues![i]),
         );
-        _indicators!.add(
+        _indicators.add(
           Indicator(
             day: i + 2,
             timestamp:

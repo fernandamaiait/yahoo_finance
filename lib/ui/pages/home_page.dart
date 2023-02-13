@@ -14,6 +14,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final HomePageViewModel viewModel;
   late final TextEditingController searchController;
+  //ResultOptions selectedResultOption = ResultOptions.table;
+  final Set<VisualizationOption> visualizationOption = <VisualizationOption>{
+    VisualizationOption.table,
+    VisualizationOption.chart
+  };
+  VisualizationOption selectedVisualizationOption = VisualizationOption.table;
 
   @override
   void initState() {
@@ -34,53 +40,70 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Guide - Yahoo Finance'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.show_chart),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              TextFormField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  suffixIcon: IconButton(
-                    onPressed: () => _onSearchPressed(),
-                    icon: const Icon(Icons.search),
-                  ),
-                  border: const OutlineInputBorder(
-                    borderSide: BorderSide(
-                      width: 1,
-                      color: Colors.black26,
+          child: Observer(builder: (context) {
+            return Column(
+              children: [
+                TextFormField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    suffixIcon: IconButton(
+                      onPressed: () => _onSearchPressed(),
+                      icon: const Icon(Icons.search),
                     ),
+                    border: const OutlineInputBorder(
+                      borderSide: BorderSide(
+                        width: 1,
+                        color: Colors.black26,
+                      ),
+                    ),
+                    labelText: 'Insira o nome do ativo a ser consultado',
                   ),
-                  labelText: 'Insira o nome do ativo a ser consultado',
                 ),
-              ),
-              const SizedBox(height: 16),
-              Observer(
-                builder: (context) {
-                  switch (viewModel.status) {
-                    case HomePageStates.loading:
-                      return const Center(child: CircularProgressIndicator());
-                    case HomePageStates.idle:
-                      return const SizedBox.shrink();
-                    case HomePageStates.success:
-                      return _SuccessContent(viewModel);
-                    case HomePageStates.error:
-                      return _ErrorContent(
-                        onRetryPressed: () => _onSearchPressed(),
-                      );
-                  }
-                },
-              ),
-            ],
-          ),
+                const SizedBox(height: 16),
+                Observer(
+                  builder: (context) {
+                    switch (viewModel.status) {
+                      case HomePageStates.loading:
+                        return const Center(child: CircularProgressIndicator());
+                      case HomePageStates.idle:
+                        return const SizedBox.shrink();
+                      case HomePageStates.success:
+                        return Column(
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => setState(
+                                () => selectedVisualizationOption =
+                                    selectedVisualizationOption ==
+                                            VisualizationOption.table
+                                        ? VisualizationOption.chart
+                                        : VisualizationOption.table,
+                              ),
+                              child: Text(selectedVisualizationOption ==
+                                      VisualizationOption.table
+                                  ? 'View chart'
+                                  : 'View table'),
+                            ),
+                            const SizedBox(height: 16),
+                            _SuccessContent(
+                              viewModel: viewModel,
+                              visualizationOption: selectedVisualizationOption,
+                            ),
+                          ],
+                        );
+                      case HomePageStates.error:
+                        return _ErrorContent(
+                          onRetryPressed: () => _onSearchPressed(),
+                        );
+                    }
+                  },
+                ),
+              ],
+            );
+          }),
         ),
       ),
     );
@@ -120,9 +143,11 @@ class _ErrorContent extends StatelessWidget {
 }
 
 class _SuccessContent extends StatelessWidget {
-  const _SuccessContent(this.viewModel);
+  const _SuccessContent(
+      {required this.viewModel, required this.visualizationOption});
 
   final HomePageViewModel viewModel;
+  final VisualizationOption visualizationOption;
 
   static final brazilianCurrencyFormatter =
       NumberFormat.simpleCurrency(locale: 'pt_BR');
@@ -134,39 +159,40 @@ class _SuccessContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Observer(builder: (context) {
-      return Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 300,
-            child: DChart(
-              //searchString: viewModel.searchString,
-              data: viewModel.chartData!,
-            ),
-          ),
-          const _TableHeader(),
-          Table(
-            border: TableBorder.all(
-              color: Colors.black12,
-              width: 1,
-            ),
-            columnWidths: _getColumWidths,
-            children: <TableRow>[
-              for (var indicator in viewModel.indicators!)
-                _buildTableRow(
-                  context,
-                  indicator.day.toString(),
-                  DateFormat('dd/MM/yyyy').format(indicator.timestamp),
-                  viewModel.currency == "BRL"
-                      ? brazilianCurrencyFormatter.format(indicator.openValue)
-                      : '${foreignCurrencyFormatter.format(indicator.openValue)} ${viewModel.currency}',
-                  _formatVariation(indicator.dMinusOneVariation),
-                  _formatVariation(indicator.dOneVariation),
+      return visualizationOption == VisualizationOption.chart
+          ? SizedBox(
+              width: double.infinity,
+              height: 300,
+              child: DChart(
+                data: viewModel.chartData,
+              ),
+            )
+          : Column(
+              children: [
+                const _TableHeader(),
+                Table(
+                  border: TableBorder.all(
+                    color: Colors.black12,
+                    width: 1,
+                  ),
+                  columnWidths: _getColumWidths,
+                  children: <TableRow>[
+                    for (var indicator in viewModel.indicators)
+                      _buildTableRow(
+                        context,
+                        indicator.day.toString(),
+                        DateFormat('dd/MM/yyyy').format(indicator.timestamp),
+                        viewModel.currency == "BRL"
+                            ? brazilianCurrencyFormatter
+                                .format(indicator.openValue)
+                            : '${foreignCurrencyFormatter.format(indicator.openValue)} ${viewModel.currency}',
+                        _formatVariation(indicator.dMinusOneVariation),
+                        _formatVariation(indicator.dOneVariation),
+                      ),
+                  ],
                 ),
-            ],
-          ),
-        ],
-      );
+              ],
+            );
     });
   }
 
@@ -294,3 +320,5 @@ get _getColumWidths {
     4: FlexColumnWidth(2),
   };
 }
+
+enum VisualizationOption { table, chart }
